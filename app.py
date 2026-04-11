@@ -141,6 +141,14 @@ def root():
     return FileResponse(os.path.join(os.path.dirname(os.path.abspath(__file__)), "index.html"))
 
 
+@app.get("/widget.js")
+def widget_js():
+    return FileResponse(
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "widget.js"),
+        media_type="application/javascript",
+    )
+
+
 class AskRequest(BaseModel):
     text: str
     session_id: Optional[str] = None
