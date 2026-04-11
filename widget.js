@@ -100,7 +100,7 @@
   closeBtn.onclick = function () {
     panel.classList.remove("open");
     fab.classList.remove("hidden");
-    if (isSpeaking) stopSpeaking();
+    stopSpeaking();
     if (isRecording && mediaRecorder && mediaRecorder.state !== "inactive") { mediaRecorder.stop(); isRecording = false; }
     resetUi();
     endSession();
