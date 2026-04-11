@@ -1,0 +1,9 @@
+.env
+__pycache__/
+*.pyc
+piper_voices/
+*.mp3
+*.wav
+*.tmp
+.venv/
+venv/
