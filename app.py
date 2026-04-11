@@ -9,7 +9,7 @@ import re
 from contextlib import asynccontextmanager
 from typing import Optional
 
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
@@ -506,7 +506,7 @@ def voice_greeting():
 
 
 @app.post("/voice")
-def voice(audio: UploadFile = File(...), session_id: Optional[str] = None):
+def voice(audio: UploadFile = File(...), session_id: Optional[str] = Form(None)):
     """
     Single round-trip for the widget: audio in → audio out.
     Transcribes, runs RAG + LLM, speaks the answer, returns the audio file.
