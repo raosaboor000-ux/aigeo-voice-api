@@ -287,7 +287,7 @@
     <script>
       const API = "https://aigeo-voice-api.onrender.com";
 
-      let mediaRecorder, chunks = [], isRecording = false;
+      let mediaRecorder, chunks = [], isRecording = false, isSpeaking = false;
       let sessionId = sessionStorage.getItem("vw_sid") || crypto.randomUUID();
       sessionStorage.setItem("vw_sid", sessionId);
       let greetingPlayed = sessionStorage.getItem("vw_greeted") === "1";
@@ -312,6 +312,7 @@
       closeBtn.onclick = () => {
         panel.classList.remove("open");
         fab.classList.remove("hidden");
+        if (isSpeaking) stopSpeaking();
         if (isRecording && mediaRecorder && mediaRecorder.state !== "inactive") {
           mediaRecorder.stop();
           isRecording = false;
@@ -384,6 +385,13 @@
         setRecording(true);
       }
 
+      function stopSpeaking() {
+        audio.pause();
+        audio.currentTime = 0;
+        audio.src = "";
+        isSpeaking = false;
+      }
+
       async function sendAudio() {
         setBusy("Thinking…");
         const mimeType = (mediaRecorder && mediaRecorder.mimeType) || "audio/webm";
@@ -400,12 +408,18 @@
             const err = await res.json().catch(() => ({}));
             throw new Error(err.detail || `HTTP ${res.status}`);
           }
-          statusEl.textContent = "Speaking…";
           const audioBlob = await res.blob();
           audio.src = URL.createObjectURL(audioBlob);
+          isSpeaking = true;
+          mic.disabled = false;
+          micIcon.innerHTML = MIC_SVG;
+          statusEl.textContent = "Speaking… tap mic to interrupt";
           await audio.play();
           await new Promise(r => { audio.onended = r; audio.onerror = r; });
-          statusEl.textContent = "Tap the mic to ask another question";
+          if (isSpeaking) {
+            isSpeaking = false;
+            statusEl.textContent = "Tap the mic to ask another question";
+          }
         } catch (e) {
           statusEl.textContent = "Error — try again";
         }
@@ -418,6 +432,16 @@
       /* --- mic click --- */
       mic.onclick = async () => {
         if (mic.disabled) return;
+
+        if (isSpeaking) {
+          stopSpeaking();
+          try {
+            await startRecording();
+          } catch (e) {
+            statusEl.textContent = "Mic access denied";
+          }
+          return;
+        }
 
         if (isRecording) {
           if (mediaRecorder && mediaRecorder.state !== "inactive") mediaRecorder.stop();
