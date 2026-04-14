@@ -77,14 +77,8 @@
   var panelOpen = false;
   var autoLoopEnabled = true;
   var micStream = null;
-  var audioCtx = null;
-  var analyser = null;
-  var silenceTimerMs = 0;
-  var silenceCheckInterval = null;
-  var lastRecordStartMs = 0;
-  var SILENCE_THRESHOLD = 0.02;   // tweak if needed
-  var SILENCE_STOP_MS = 1300;     // stop after this long silence
-  var MIN_RECORD_MS = 700;        // avoid immediate cut-off
+  var maxRecordTimer = null;
+  var MAX_RECORD_MS = 12000;
   var sessionId;
   try { sessionId = sessionStorage.getItem("vw_sid") || crypto.randomUUID(); sessionStorage.setItem("vw_sid", sessionId); }
   catch (_) { sessionId = "w-" + Math.random().toString(36).slice(2); }
@@ -118,7 +112,7 @@
     fab.classList.remove("hidden");
     stopSpeaking();
     if (isRecording && mediaRecorder && mediaRecorder.state !== "inactive") { mediaRecorder.stop(); isRecording = false; }
-    stopVoiceActivityMonitor();
+    if (maxRecordTimer) { clearTimeout(maxRecordTimer); maxRecordTimer = null; }
     resetUi();
     endSession();
   };
@@ -180,51 +174,6 @@
     isSpeaking = false;
   }
 
-  function stopVoiceActivityMonitor() {
-    if (silenceCheckInterval) {
-      clearInterval(silenceCheckInterval);
-      silenceCheckInterval = null;
-    }
-    silenceTimerMs = 0;
-  }
-
-  function startVoiceActivityMonitor() {
-    if (!analyser) return;
-    stopVoiceActivityMonitor();
-    var samples = new Uint8Array(analyser.fftSize);
-    silenceCheckInterval = setInterval(function () {
-      if (!isRecording || !mediaRecorder || mediaRecorder.state === "inactive") {
-        stopVoiceActivityMonitor();
-        return;
-      }
-      analyser.getByteTimeDomainData(samples);
-      var sum = 0;
-      for (var i = 0; i < samples.length; i++) {
-        var v = (samples[i] - 128) / 128;
-        sum += v * v;
-      }
-      var rms = Math.sqrt(sum / samples.length);
-      var elapsed = Date.now() - lastRecordStartMs;
-      if (elapsed < MIN_RECORD_MS) {
-        silenceTimerMs = 0;
-        return;
-      }
-      if (rms < SILENCE_THRESHOLD) {
-        silenceTimerMs += 140;
-        if (silenceTimerMs >= SILENCE_STOP_MS) {
-          isRecording = false;
-          setRecording(false);
-          if (mediaRecorder && mediaRecorder.state !== "inactive") {
-            mediaRecorder.stop();
-          }
-          stopVoiceActivityMonitor();
-        }
-      } else {
-        silenceTimerMs = 0;
-      }
-    }, 140);
-  }
-
   function startRecording() {
     if (!panelOpen) return;
     if (isRecording) return;
@@ -232,27 +181,24 @@
       micStream = stream;
       mediaRecorder = new MediaRecorder(stream);
       chunks = [];
-      lastRecordStartMs = Date.now();
-      try {
-        audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
-        var src = audioCtx.createMediaStreamSource(stream);
-        analyser = audioCtx.createAnalyser();
-        analyser.fftSize = 2048;
-        src.connect(analyser);
-      } catch (_) {
-        analyser = null;
-      }
       mediaRecorder.ondataavailable = function (e) { if (e.data.size > 0) chunks.push(e.data); };
       mediaRecorder.onstop = function () {
-        stopVoiceActivityMonitor();
+        if (maxRecordTimer) { clearTimeout(maxRecordTimer); maxRecordTimer = null; }
         stream.getTracks().forEach(function (t) { t.stop(); });
         micStream = null;
         sendAudio();
       };
       mediaRecorder.start();
+      if (maxRecordTimer) clearTimeout(maxRecordTimer);
+      maxRecordTimer = setTimeout(function () {
+        if (isRecording && mediaRecorder && mediaRecorder.state !== "inactive") {
+          isRecording = false;
+          setRecording(false);
+          mediaRecorder.stop();
+        }
+      }, MAX_RECORD_MS);
       isRecording = true;
       setRecording(true);
-      startVoiceActivityMonitor();
     }).catch(function () {
       statusEl.textContent = "Mic access denied";
     });
@@ -321,7 +267,7 @@
     if (isRecording) {
       if (mediaRecorder && mediaRecorder.state !== "inactive") mediaRecorder.stop();
       isRecording = false;
-      stopVoiceActivityMonitor();
+      if (maxRecordTimer) { clearTimeout(maxRecordTimer); maxRecordTimer = null; }
       setRecording(false);
       return;
     }
