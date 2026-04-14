@@ -60,6 +60,42 @@ def _format_session_history(msgs: list[dict]) -> str:
     return "\n".join(lines)
 
 
+# Wider retrieval + product-page boost (see _retrieve_rag_chunks)
+RAG_TOP_K = 14
+RAG_MAX_CHUNKS = 22
+PRODUCT_URL_PATH = "/products"
+# If user query matches any of these (substring, case-insensitive), merge chunks from /products/
+PRODUCT_QUERY_HINTS = (
+    "product",
+    "novo",
+    "resil",
+    "mhvra",
+    "carbon",
+    "emission",
+    "esg",
+    "parcel",
+    "dashboard",
+    "metricflow",
+    "pulseboard",
+    "astore",
+    "mineral",
+    "firm",
+    "flood",
+    "arid",
+    "drought",
+    "agile",
+    "dbo",
+    "mach",
+    "zoning",
+    "land mapping",
+)
+
+
+def _query_hints_products(q: str) -> bool:
+    s = (q or "").lower()
+    return any(h in s for h in PRODUCT_QUERY_HINTS)
+
+
 def _dedupe_hits(hits: list[Chunk], max_chunks: int = 8) -> list[Chunk]:
     seen: set[tuple[str, str]] = set()
     out: list[Chunk] = []
@@ -74,10 +110,24 @@ def _dedupe_hits(hits: list[Chunk], max_chunks: int = 8) -> list[Chunk]:
     return out
 
 
-def _hybrid_retrieve(site_rag: SiteRAG, user_q: str, expanded_q: str, k: int = 6) -> list[Chunk]:
+def _hybrid_retrieve(site_rag: SiteRAG, user_q: str, expanded_q: str, k: int = RAG_TOP_K) -> list[Chunk]:
     a = site_rag.retrieve(user_q, top_k=k)
     b = site_rag.retrieve(expanded_q, top_k=k) if expanded_q.strip() != user_q.strip() else []
     return _dedupe_hits(a + b, max_chunks=k)
+
+
+def _retrieve_rag_chunks(site_rag: SiteRAG, user_q: str, expanded_q: str) -> list[Chunk]:
+    """BM25 hybrid retrieve + extra chunks from /products/ when the query looks product-related."""
+    hits = _hybrid_retrieve(site_rag, user_q, expanded_q, k=RAG_TOP_K)
+    combined = list(hits)
+    if _query_hints_products(user_q) or _query_hints_products(expanded_q):
+        extra = site_rag.retrieve_url_contains(user_q, PRODUCT_URL_PATH, top_k=10)
+        if expanded_q.strip() != user_q.strip():
+            extra2 = site_rag.retrieve_url_contains(expanded_q, PRODUCT_URL_PATH, top_k=6)
+            combined = extra + extra2 + combined
+        else:
+            combined = extra + combined
+    return _dedupe_hits(combined, max_chunks=RAG_MAX_CHUNKS)
 
 
 def expand_query_for_synonyms(user_query: str) -> str:
@@ -118,7 +168,7 @@ DEFAULT_GREETING = (
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await asyncio.to_thread(site_rag.crawl_and_index, 45, 2)
+    await asyncio.to_thread(site_rag.crawl_and_index, 70, 3)
     yield
 
 
@@ -387,7 +437,7 @@ def rag_status():
 
 @app.post("/reindex")
 async def reindex():
-    n = await asyncio.to_thread(site_rag.crawl_and_index, 45, 2)
+    n = await asyncio.to_thread(site_rag.crawl_and_index, 70, 3)
     return {"indexed_chunks": n, **site_rag.status()}
 
 
@@ -434,7 +484,7 @@ def ask(req: AskRequest):
 
     user_q = req.text.strip()
     expanded = expand_query_for_synonyms(user_q)
-    hits = _hybrid_retrieve(site_rag, user_q, expanded, k=6)
+    hits = _retrieve_rag_chunks(site_rag, user_q, expanded)
 
     blocks = []
     sources: list[dict] = []
@@ -548,7 +598,7 @@ def voice(audio: UploadFile = File(...), session_id: Optional[str] = Form(None))
     # --- RAG + LLM ---
     sid = (session_id or "").strip() or None
     expanded = expand_query_for_synonyms(user_q)
-    hits = _hybrid_retrieve(site_rag, user_q, expanded, k=6)
+    hits = _retrieve_rag_chunks(site_rag, user_q, expanded)
 
     blocks = [f"Page: {h.title}\nURL: {h.url}\n\n{h.text}" for h in hits]
 

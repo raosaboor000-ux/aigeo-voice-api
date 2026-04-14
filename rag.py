@@ -205,3 +205,27 @@ class SiteRAG:
             for i in ranked[:top_k]:
                 out.append(self.chunks[i])
         return out[:top_k]
+
+    def retrieve_url_contains(self, query: str, url_substring: str, top_k: int = 8) -> list[Chunk]:
+        """BM25 over chunks whose URL contains url_substring (e.g. /products/ for long product pages)."""
+        if not self._bm25 or not self.chunks or not query.strip():
+            return []
+        needle = (url_substring or "").strip().lower()
+        if not needle:
+            return []
+        q_tokens = tokenize(query)
+        if not q_tokens:
+            return []
+        indices = [i for i, c in enumerate(self.chunks) if needle in (c.url or "").lower()]
+        if not indices:
+            return []
+        scores = self._bm25.get_scores(q_tokens)
+        ranked = sorted(indices, key=lambda i: scores[i], reverse=True)
+        out: list[Chunk] = []
+        for i in ranked[:top_k]:
+            if scores[i] > 0:
+                out.append(self.chunks[i])
+        if not out:
+            for i in ranked[:top_k]:
+                out.append(self.chunks[i])
+        return out[:top_k]
