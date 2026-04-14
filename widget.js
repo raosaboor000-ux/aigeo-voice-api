@@ -74,6 +74,17 @@
 
   /* ---- state ---- */
   var mediaRecorder, chunks = [], isRecording = false, isSpeaking = false;
+  var panelOpen = false;
+  var autoLoopEnabled = true;
+  var micStream = null;
+  var audioCtx = null;
+  var analyser = null;
+  var silenceTimerMs = 0;
+  var silenceCheckInterval = null;
+  var lastRecordStartMs = 0;
+  var SILENCE_THRESHOLD = 0.02;   // tweak if needed
+  var SILENCE_STOP_MS = 1300;     // stop after this long silence
+  var MIN_RECORD_MS = 700;        // avoid immediate cut-off
   var sessionId;
   try { sessionId = sessionStorage.getItem("vw_sid") || crypto.randomUUID(); sessionStorage.setItem("vw_sid", sessionId); }
   catch (_) { sessionId = "w-" + Math.random().toString(36).slice(2); }
@@ -95,13 +106,19 @@
   var SPIN_SVG = '<path d="M12 2a10 10 0 0 1 10 10" stroke-width="2.5"><animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur=".75s" repeatCount="indefinite"/></path>';
 
   /* ---- open / close ---- */
-  fab.onclick = function () { fab.classList.add("hidden"); panel.classList.add("open"); };
+  fab.onclick = function () {
+    panelOpen = true;
+    fab.classList.add("hidden");
+    panel.classList.add("open");
+  };
 
   closeBtn.onclick = function () {
+    panelOpen = false;
     panel.classList.remove("open");
     fab.classList.remove("hidden");
     stopSpeaking();
     if (isRecording && mediaRecorder && mediaRecorder.state !== "inactive") { mediaRecorder.stop(); isRecording = false; }
+    stopVoiceActivityMonitor();
     resetUi();
     endSession();
   };
@@ -163,18 +180,79 @@
     isSpeaking = false;
   }
 
+  function stopVoiceActivityMonitor() {
+    if (silenceCheckInterval) {
+      clearInterval(silenceCheckInterval);
+      silenceCheckInterval = null;
+    }
+    silenceTimerMs = 0;
+  }
+
+  function startVoiceActivityMonitor() {
+    if (!analyser) return;
+    stopVoiceActivityMonitor();
+    var samples = new Uint8Array(analyser.fftSize);
+    silenceCheckInterval = setInterval(function () {
+      if (!isRecording || !mediaRecorder || mediaRecorder.state === "inactive") {
+        stopVoiceActivityMonitor();
+        return;
+      }
+      analyser.getByteTimeDomainData(samples);
+      var sum = 0;
+      for (var i = 0; i < samples.length; i++) {
+        var v = (samples[i] - 128) / 128;
+        sum += v * v;
+      }
+      var rms = Math.sqrt(sum / samples.length);
+      var elapsed = Date.now() - lastRecordStartMs;
+      if (elapsed < MIN_RECORD_MS) {
+        silenceTimerMs = 0;
+        return;
+      }
+      if (rms < SILENCE_THRESHOLD) {
+        silenceTimerMs += 140;
+        if (silenceTimerMs >= SILENCE_STOP_MS) {
+          isRecording = false;
+          setRecording(false);
+          if (mediaRecorder && mediaRecorder.state !== "inactive") {
+            mediaRecorder.stop();
+          }
+          stopVoiceActivityMonitor();
+        }
+      } else {
+        silenceTimerMs = 0;
+      }
+    }, 140);
+  }
+
   function startRecording() {
+    if (!panelOpen) return;
+    if (isRecording) return;
     navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
+      micStream = stream;
       mediaRecorder = new MediaRecorder(stream);
       chunks = [];
+      lastRecordStartMs = Date.now();
+      try {
+        audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+        var src = audioCtx.createMediaStreamSource(stream);
+        analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 2048;
+        src.connect(analyser);
+      } catch (_) {
+        analyser = null;
+      }
       mediaRecorder.ondataavailable = function (e) { if (e.data.size > 0) chunks.push(e.data); };
       mediaRecorder.onstop = function () {
+        stopVoiceActivityMonitor();
         stream.getTracks().forEach(function (t) { t.stop(); });
+        micStream = null;
         sendAudio();
       };
       mediaRecorder.start();
       isRecording = true;
       setRecording(true);
+      startVoiceActivityMonitor();
     }).catch(function () {
       statusEl.textContent = "Mic access denied";
     });
@@ -200,14 +278,25 @@
         statusEl.textContent = "Speaking\u2026 tap mic to interrupt";
         audio.play();
         audio.onended = function () {
-          if (isSpeaking) { isSpeaking = false; statusEl.textContent = "Tap the mic to ask another question"; }
+          if (isSpeaking) {
+            isSpeaking = false;
+            statusEl.textContent = "Listening again…";
+          }
           ring.classList.remove("active");
           avatarW.classList.remove("active");
+          if (autoLoopEnabled && panelOpen) {
+            setTimeout(function () {
+              if (!isRecording && !isSpeaking && panelOpen) startRecording();
+            }, 180);
+          } else {
+            statusEl.textContent = "Tap the mic to ask another question";
+          }
         };
         audio.onerror = function () {
           isSpeaking = false;
           ring.classList.remove("active");
           avatarW.classList.remove("active");
+          statusEl.textContent = "Tap the mic to ask another question";
         };
       })
       .catch(function () {
@@ -232,6 +321,7 @@
     if (isRecording) {
       if (mediaRecorder && mediaRecorder.state !== "inactive") mediaRecorder.stop();
       isRecording = false;
+      stopVoiceActivityMonitor();
       setRecording(false);
       return;
     }
