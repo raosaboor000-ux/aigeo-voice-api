@@ -13,19 +13,19 @@
     "#vw-fab:active{transform:scale(.94)}" +
     "#vw-fab svg{width:28px;height:28px}" +
     "#vw-fab.hidden{display:none}" +
-    "#vw-panel{position:fixed;bottom:28px;right:28px;z-index:2147483647;width:320px;background:linear-gradient(155deg,rgba(255,255,255,.16),rgba(255,255,255,.08));backdrop-filter:blur(14px) saturate(130%);-webkit-backdrop-filter:blur(14px) saturate(130%);border-radius:24px;box-shadow:0 20px 60px rgba(15,23,42,.28);display:none;flex-direction:column;align-items:center;overflow:hidden;border:1px solid rgba(255,255,255,.26);font-family:'Inter','Segoe UI',sans-serif}" +
+    "#vw-panel{position:fixed;bottom:28px;right:28px;z-index:2147483647;width:320px;background:#0f172a;border-radius:24px;box-shadow:0 20px 60px rgba(0,0,0,.35);display:none;flex-direction:column;align-items:center;overflow:hidden;border:1px solid rgba(148,163,184,.14);font-family:'Inter','Segoe UI',sans-serif}" +
     "#vw-panel.open{display:flex}" +
     ".vw-header{width:100%;display:flex;align-items:center;justify-content:space-between;padding:16px 20px 0}" +
-    ".vw-title{font-size:.82rem;font-weight:600;color:#fff;letter-spacing:.03em;text-shadow:0 1px 2px rgba(0,0,0,.2)}" +
-    ".vw-close{width:32px;height:32px;border-radius:50%;border:none;background:rgba(255,255,255,.16);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .2s}" +
-    ".vw-close:hover{background:rgba(255,255,255,.24);color:#fff}" +
+    ".vw-title{font-size:.82rem;font-weight:600;color:#cbd5e1;letter-spacing:.03em}" +
+    ".vw-close{width:32px;height:32px;border-radius:50%;border:none;background:rgba(148,163,184,.12);color:#cbd5e1;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .2s}" +
+    ".vw-close:hover{background:rgba(248,113,113,.2);color:#fecaca}" +
     ".vw-close svg{width:16px;height:16px}" +
     ".vw-avatar-area{padding:28px 0 8px;display:flex;flex-direction:column;align-items:center;position:relative}" +
     ".vw-avatar-wrap{position:relative;width:120px;height:120px}" +
     ".vw-ring{width:120px;height:120px;border-radius:50%;background:conic-gradient(from 0deg,#f97316,#fb923c,#fdba74,#f97316);padding:3px;transition:transform .4s}" +
     ".vw-ring.active{animation:vw-spin 2.5s linear infinite}" +
     "@keyframes vw-spin{to{transform:rotate(360deg)}}" +
-    ".vw-ring-inner{width:100%;height:100%;border-radius:50%;background:rgba(17,24,39,.56);display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,.16)}" +
+    ".vw-ring-inner{width:100%;height:100%;border-radius:50%;background:#1e293b;display:flex;align-items:center;justify-content:center}" +
     ".vw-ring-inner svg{width:64px;height:64px}" +
     ".vw-pulse{position:absolute;top:50%;left:50%;width:120px;height:120px;border-radius:50%;border:2px solid rgba(251,146,60,.34);transform:translate(-50%,-50%) scale(1);opacity:0;pointer-events:none}" +
     ".vw-avatar-wrap.active .vw-pulse:nth-child(1){animation:vw-p 2s ease-out infinite}" +
@@ -38,7 +38,7 @@
     ".vw-mic:disabled{opacity:.4;cursor:not-allowed;transform:none}" +
     ".vw-mic.rec{background:linear-gradient(135deg,#ea580c,#f97316);box-shadow:0 4px 20px rgba(234,88,12,.5)}" +
     ".vw-mic svg{width:26px;height:26px}" +
-    ".vw-status{padding:14px 20px 20px;font-size:.78rem;color:rgba(255,255,255,.9);text-align:center;min-height:48px;line-height:1.5;text-shadow:0 1px 1px rgba(0,0,0,.2)}" +
+    ".vw-status{padding:14px 20px 20px;font-size:.78rem;color:#cbd5e1;text-align:center;min-height:48px;line-height:1.5}" +
     "@media(max-width:400px){#vw-panel{width:calc(100vw - 24px);right:12px;bottom:12px}#vw-fab{bottom:16px;right:16px}}";
   document.head.appendChild(css);
 
