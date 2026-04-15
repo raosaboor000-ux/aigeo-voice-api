@@ -56,16 +56,16 @@
         height: 62px;
         border-radius: 50%;
         border: none;
-        background: linear-gradient(135deg, #6366f1, #818cf8);
+        background: linear-gradient(135deg, #f97316, #fb923c);
         color: #fff;
         display: flex;
         align-items: center;
         justify-content: center;
         cursor: pointer;
-        box-shadow: 0 4px 24px rgba(99,102,241,.45);
+        box-shadow: 0 4px 24px rgba(249,115,22,.45);
         transition: transform .15s, box-shadow .2s;
       }
-      #vw-fab:hover { transform: scale(1.08); box-shadow: 0 6px 32px rgba(99,102,241,.6); }
+      #vw-fab:hover { transform: scale(1.08); box-shadow: 0 6px 32px rgba(249,115,22,.65); }
       #vw-fab:active { transform: scale(.94); }
       #vw-fab svg { width: 28px; height: 28px; }
       #vw-fab.hidden { display: none; }
@@ -77,14 +77,16 @@
         right: 28px;
         z-index: 2147483647;
         width: 320px;
-        background: #0f172a;
+        background: linear-gradient(155deg, rgba(255,255,255,.16), rgba(255,255,255,.08));
+        backdrop-filter: blur(14px) saturate(130%);
+        -webkit-backdrop-filter: blur(14px) saturate(130%);
         border-radius: 24px;
-        box-shadow: 0 20px 60px rgba(0,0,0,.35);
+        box-shadow: 0 20px 60px rgba(15,23,42,.28);
         display: none;
         flex-direction: column;
         align-items: center;
         overflow: hidden;
-        border: 1px solid rgba(148,163,184,.1);
+        border: 1px solid rgba(255,255,255,.26);
       }
       #vw-panel.open { display: flex; }
 
@@ -99,23 +101,24 @@
       .vw-title {
         font-size: .82rem;
         font-weight: 600;
-        color: #94a3b8;
+        color: #fff;
         letter-spacing: .03em;
+        text-shadow: 0 1px 2px rgba(0,0,0,.2);
       }
       .vw-close {
         width: 32px;
         height: 32px;
         border-radius: 50%;
         border: none;
-        background: rgba(148,163,184,.12);
-        color: #94a3b8;
+        background: rgba(255,255,255,.16);
+        color: #fff;
         display: flex;
         align-items: center;
         justify-content: center;
         cursor: pointer;
         transition: background .2s;
       }
-      .vw-close:hover { background: rgba(248,113,113,.2); color: #fca5a5; }
+      .vw-close:hover { background: rgba(255,255,255,.24); color: #fff; }
       .vw-close svg { width: 16px; height: 16px; }
 
       /* avatar area */
@@ -135,7 +138,7 @@
         width: 120px;
         height: 120px;
         border-radius: 50%;
-        background: conic-gradient(from 0deg, #818cf8, #34d399, #60a5fa, #818cf8);
+        background: conic-gradient(from 0deg, #f97316, #fb923c, #fdba74, #f97316);
         padding: 3px;
         transition: transform .4s;
       }
@@ -146,10 +149,11 @@
         width: 100%;
         height: 100%;
         border-radius: 50%;
-        background: #1e293b;
+        background: rgba(17,24,39,.56);
         display: flex;
         align-items: center;
         justify-content: center;
+        border: 1px solid rgba(255,255,255,.16);
       }
       .vw-ring-inner svg { width: 64px; height: 64px; }
 
@@ -159,7 +163,7 @@
         top: 50%; left: 50%;
         width: 120px; height: 120px;
         border-radius: 50%;
-        border: 2px solid rgba(129,140,248,.25);
+        border: 2px solid rgba(251,146,60,.34);
         transform: translate(-50%,-50%) scale(1);
         opacity: 0;
         pointer-events: none;
@@ -179,21 +183,21 @@
         height: 58px;
         border-radius: 50%;
         border: none;
-        background: linear-gradient(135deg, #6366f1, #818cf8);
+        background: linear-gradient(135deg, #f97316, #fb923c);
         color: #fff;
         display: flex;
         align-items: center;
         justify-content: center;
         cursor: pointer;
-        box-shadow: 0 4px 20px rgba(99,102,241,.4);
+        box-shadow: 0 4px 20px rgba(249,115,22,.45);
         transition: transform .15s, box-shadow .2s, background .3s;
       }
       .vw-mic:hover { transform: scale(1.08); }
       .vw-mic:active { transform: scale(.93); }
       .vw-mic:disabled { opacity: .4; cursor: not-allowed; transform: none; }
       .vw-mic.rec {
-        background: linear-gradient(135deg, #ef4444, #f87171);
-        box-shadow: 0 4px 20px rgba(239,68,68,.45);
+        background: linear-gradient(135deg, #ea580c, #f97316);
+        box-shadow: 0 4px 20px rgba(234,88,12,.5);
       }
       .vw-mic svg { width: 26px; height: 26px; }
 
@@ -201,10 +205,11 @@
       .vw-status {
         padding: 14px 20px 20px;
         font-size: .78rem;
-        color: #94a3b8;
+        color: rgba(255,255,255,.9);
         text-align: center;
         min-height: 48px;
         line-height: 1.5;
+        text-shadow: 0 1px 1px rgba(0,0,0,.2);
       }
 
       /* responsive */
